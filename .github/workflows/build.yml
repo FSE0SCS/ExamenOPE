@@ -148,22 +148,7 @@ print('Excel de prueba creado')
     - name: 📁 Crear directorio data
       run: |
         mkdir data
-        python -c "
-import pandas as pd
-import os
-df = pd.DataFrame({
-    'Pregunta': ['¿Cuál es la capital de España?', '¿2+2=?'],
-    'Respuesta A': ['Madrid', '3'],
-    'Respuesta B': ['Barcelona', '4'],
-    'Respuesta C': ['Valencia', '5'],
-    'Respuesta D': ['Sevilla', '6'],
-    'Respuesta Correcta (Letra)': ['A', 'B'],
-    'Respuesta Correcta (Texto)': ['Madrid', '4']
-})
-os.makedirs('data', exist_ok=True)
-df.to_excel('data/cuestionario_procesado.xlsx', index=False)
-print('Excel de prueba creado')
-        "
+        python -c "import pandas as pd; import os; df = pd.DataFrame({'Pregunta': ['Capital de España?', '2+2=?'], 'Respuesta A': ['Madrid', '3'], 'Respuesta B': ['Barcelona', '4'], 'Respuesta C': ['Valencia', '5'], 'Respuesta D': ['Sevilla', '6'], 'Respuesta Correcta (Letra)': ['A', 'B'], 'Respuesta Correcta (Texto)': ['Madrid', '4']}); os.makedirs('data', exist_ok=True); df.to_excel('data/cuestionario_procesado.xlsx', index=False); print('Excel creado')"
     
     - name: 🔨 Compilar para Windows
       run: |
