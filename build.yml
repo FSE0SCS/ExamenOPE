@@ -1,0 +1,205 @@
+name: 🚀 Build ExamenOPE Multi-Platform
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permite ejecutar manualmente
+
+jobs:
+  build-macos:
+    name: 🍎 Build para macOS
+    runs-on: macos-latest
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Cache dependencias
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: 🔧 Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install ttkbootstrap pandas openpyxl matplotlib fpdf2 pillow numpy
+        pip install --upgrade setuptools wheel
+    
+    - name: 📁 Crear directorio data
+      run: |
+        mkdir -p data
+        # Si no hay Excel, crear uno de prueba
+        if [ ! -f "data/cuestionario_procesado.xlsx" ]; then
+          echo "Creando Excel de prueba..."
+          python -c "
+import pandas as pd
+import os
+df = pd.DataFrame({
+    'Pregunta': ['¿Cuál es la capital de España?', '¿2+2=?'],
+    'Respuesta A': ['Madrid', '3'],
+    'Respuesta B': ['Barcelona', '4'],
+    'Respuesta C': ['Valencia', '5'],
+    'Respuesta D': ['Sevilla', '6'],
+    'Respuesta Correcta (Letra)': ['A', 'B'],
+    'Respuesta Correcta (Texto)': ['Madrid', '4']
+})
+os.makedirs('data', exist_ok=True)
+df.to_excel('data/cuestionario_procesado.xlsx', index=False)
+print('Excel de prueba creado')
+          "
+        fi
+    
+    - name: 🔨 Compilar para macOS
+      run: |
+        pyinstaller --clean --noconfirm \
+          --onefile \
+          --windowed \
+          --name="ExamenOPE" \
+          --add-data="data:data" \
+          --hidden-import="tkinter" \
+          --hidden-import="tkinter.ttk" \
+          --hidden-import="ttkbootstrap" \
+          --hidden-import="matplotlib.backends.backend_tkagg" \
+          --hidden-import="pandas" \
+          --hidden-import="openpyxl" \
+          --hidden-import="fpdf" \
+          --hidden-import="sqlite3" \
+          --hidden-import="PIL" \
+          --exclude-module="PyQt5" \
+          --exclude-module="PyQt6" \
+          --exclude-module="PySide2" \
+          --exclude-module="PySide6" \
+          --osx-bundle-identifier="com.examenope.app" \
+          main_premium.py
+    
+    - name: 📦 Crear DMG
+      run: |
+        if [ -d "dist/ExamenOPE.app" ]; then
+          # Crear DMG para distribución
+          hdiutil create -volname "ExamenOPE" \
+            -srcfolder "dist/ExamenOPE.app" \
+            -ov -format UDZO \
+            "dist/ExamenOPE-macOS.dmg"
+          echo "✅ DMG creado exitosamente"
+        else
+          echo "❌ No se encontró ExamenOPE.app"
+          ls -la dist/
+        fi
+    
+    - name: 📊 Info del build
+      run: |
+        echo "=== BUILD INFO ==="
+        ls -la dist/
+        if [ -d "dist/ExamenOPE.app" ]; then
+          du -sh dist/ExamenOPE.app
+        fi
+        if [ -f "dist/ExamenOPE-macOS.dmg" ]; then
+          du -sh dist/ExamenOPE-macOS.dmg
+        fi
+    
+    - name: 📤 Upload macOS App
+      uses: actions/upload-artifact@v3
+      with:
+        name: ExamenOPE-macOS
+        path: |
+          dist/ExamenOPE.app
+          dist/ExamenOPE-macOS.dmg
+        retention-days: 30
+
+  build-windows:
+    name: 🪟 Build para Windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Cache dependencias
+      uses: actions/cache@v3
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: 🔧 Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install ttkbootstrap pandas openpyxl matplotlib fpdf2 pillow numpy
+        pip install --upgrade setuptools wheel
+    
+    - name: 📁 Crear directorio data
+      run: |
+        mkdir data
+        python -c "
+import pandas as pd
+import os
+df = pd.DataFrame({
+    'Pregunta': ['¿Cuál es la capital de España?', '¿2+2=?'],
+    'Respuesta A': ['Madrid', '3'],
+    'Respuesta B': ['Barcelona', '4'],
+    'Respuesta C': ['Valencia', '5'],
+    'Respuesta D': ['Sevilla', '6'],
+    'Respuesta Correcta (Letra)': ['A', 'B'],
+    'Respuesta Correcta (Texto)': ['Madrid', '4']
+})
+os.makedirs('data', exist_ok=True)
+df.to_excel('data/cuestionario_procesado.xlsx', index=False)
+print('Excel de prueba creado')
+        "
+    
+    - name: 🔨 Compilar para Windows
+      run: |
+        pyinstaller --clean --noconfirm --onefile --windowed --name="ExamenOPE" --add-data="data;data" --hidden-import="tkinter" --hidden-import="tkinter.ttk" --hidden-import="ttkbootstrap" --hidden-import="matplotlib.backends.backend_tkagg" --hidden-import="pandas" --hidden-import="openpyxl" --hidden-import="fpdf" --hidden-import="sqlite3" --hidden-import="PIL" --exclude-module="PyQt5" --exclude-module="PyQt6" main_premium.py
+    
+    - name: 📊 Info del build
+      run: |
+        echo "=== BUILD INFO ==="
+        dir dist
+        if (Test-Path "dist/ExamenOPE.exe") {
+          $size = (Get-Item "dist/ExamenOPE.exe").Length / 1MB
+          Write-Host "Tamaño del ejecutable: $([math]::Round($size, 2)) MB"
+        }
+    
+    - name: 📤 Upload Windows App
+      uses: actions/upload-artifact@v3
+      with:
+        name: ExamenOPE-Windows
+        path: dist/ExamenOPE.exe
+        retention-days: 30
+
+  build-info:
+    name: 📋 Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-macos, build-windows]
+    if: always()
+    
+    steps:
+    - name: 📊 Build Summary
+      run: |
+        echo "🎉 BUILD COMPLETADO"
+        echo "=================="
+        echo "✅ macOS: ${{ needs.build-macos.result }}"
+        echo "✅ Windows: ${{ needs.build-windows.result }}"
+        echo ""
+        echo "📥 Para descargar:"
+        echo "1. Ve a la pestaña 'Actions'"
+        echo "2. Click en este workflow"
+        echo "3. Descarga los artifacts"
