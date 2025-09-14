@@ -1,6 +1,7 @@
-PySide6>=6.4.0
+streamlit>=1.28.0
 pandas>=1.5.0
-openpyxl>=3.0.0
-matplotlib>=3.6.0
-fpdf2>=2.7.0
-Pillow>=9.0.0
+openpyxl>=3.0.9
+matplotlib>=3.5.0
+fpdf2>=2.5.0
+pillow>=8.3.0
+numpy>=1.21.0
